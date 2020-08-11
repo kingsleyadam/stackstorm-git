@@ -88,6 +88,12 @@ class GitCommitSensor(PollingSensor):
 
     def _dispatch_trigger(self, commit, repo):
         trigger = self._trigger_ref
+
+        repository_url = repo.config_reader().get_value('remote "origin"', 'url')
+        repository_name = None
+        if repository_url:
+            repository_name = repository_url[repository_url.rindex('/') + 1:].rstrip('.git')
+
         payload = {}
         payload['branch'] = repo.active_branch.name
         payload['revision'] = str(commit)
@@ -100,7 +106,8 @@ class GitCommitSensor(PollingSensor):
         payload['committer_email'] = commit.committer.email
         payload['committed_date'] = self._to_date(commit.committed_date)
         payload['committer_tz_offset'] = commit.committer_tz_offset
-        payload['repository_url'] = repo.config_reader().get_value('remote "origin"', 'url')
+        payload['repository_url'] = repository_url
+        payload['repository_name'] = repository_name
         self._logger.debug('Found new commit. Dispatching trigger: %s', payload)
         self._sensor_service.dispatch(trigger, payload)
 
